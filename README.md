@@ -4,12 +4,12 @@ The home page is an ink painting of four carp. Each fish is a link to one sectio
 
 | Fish | Section |
 | --- | --- |
-| Big dark carp (left) | About |
-| Pale fish (top) | Writing |
+| Big dark carp (left) | About me |
+| Pale fish (top) | Blog |
 | Curling carp (right) | Music |
-| Small golden carp (bottom) | Work |
+| Small golden carp (bottom) | Professional |
 
-The fish sway gently, and now and then a ripple spreads across the water. Hover over a fish (or a name in the menu at the bottom) and the fish lifts while the others fade back. Click a fish and it swims off; the pond drifts away and the section opens on a different part of the pond. "Back to the pond" (or Esc) brings the fish swimming home.
+The fish sway gently, and now and then a ripple spreads across the water. Hover over a fish (or a name in the menu at the bottom) and the fish lifts, its name appears, and the others fade back. On phones the pond is turned a quarter turn so it fills the screen (the signature is shown upright in the corner), and you just tap a fish. Click a fish and it swims off; the pond drifts away and the section opens on a different part of the pond. "Back to the pond" (or Esc) brings the fish swimming home.
 
 It is a plain static site with no build step: `index.html`, `css/style.css`, `js/pond.js` and `assets/`.
 
@@ -26,9 +26,9 @@ python3 -m http.server 8000
 
 All text is in `index.html`:
 
-- **Name and tagline**: the `.mark` header near the top, plus `<title>`. The red seal shows your initials (`YN`).
+- **Name and stamp**: the `.mark` header near the top, plus `<title>`. The red square is a placeholder for your name stamp; there's a comment showing where the stamp image goes.
 - **Sections**: each one is an `<article class="section" data-route="...">` block. Replace the placeholder text, links, posts, tracks, jobs and publications.
-- **Résumé**: put a `resume.pdf` next to `index.html`; the Work page already links to it.
+- **Résumé**: put a `resume.pdf` next to `index.html`; the Professional page already links to it.
 - **Which fish goes where**: change a fish's `href` and `aria-label` in the pond, plus its `data-route` section.
 
 Labels sit at `--lx/--ly` on each fish (as a % of the fish's image, the point is the label's bottom centre). Each fish's swimming direction is `data-heading`.

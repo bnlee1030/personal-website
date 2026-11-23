@@ -91,3 +91,19 @@ bg = (Pf * (1 - soft) + fill * soft).astype(np.uint8)
 cv2.imwrite(f"{out}/background.webp", bg, [cv2.IMWRITE_WEBP_QUALITY, 82])
 json.dump({"width": W, "height": H, "fish": meta}, open(f"{out}/fish.json", "w"), indent=2)
 print(json.dumps(meta))
+
+# Signature + seal, cut out on its own so phones (where the pond is turned a
+# quarter turn) can show it upright, plus a background with it painted out.
+sx0, sy0, sx1, sy1 = 48, 1140, 160, 1362
+sig = P[sy0:sy1, sx0:sx1].astype(np.float32)
+paper_c = smooth[sy0:sy1, sx0:sx1]
+lum = sig.mean(2); plum = paper_c.mean(2)
+dark = np.clip((plum - lum - 8) / 70, 0, 1)
+red = np.clip((sig[..., 2] - sig[..., 1] - 18) / 40, 0, 1)
+a = np.maximum(dark, red)
+rgb = np.clip((sig - paper_c * (1 - a[..., None])) / np.maximum(a[..., None], 0.05), 0, 255)
+cv2.imwrite(f"{out}/signature.webp", np.dstack([rgb, a * 255]).astype(np.uint8), [cv2.IMWRITE_WEBP_QUALITY, 90])
+m2 = np.zeros((H, W), np.uint8); m2[sy0:sy1, sx0:sx1] = 255
+soft2 = cv2.GaussianBlur(m2, (0, 0), 6).astype(np.float32)[..., None] / 255
+bg2 = (bg.astype(np.float32) * (1 - soft2) + fill * soft2).astype(np.uint8)
+cv2.imwrite(f"{out}/background-nosig.webp", bg2, [cv2.IMWRITE_WEBP_QUALITY, 82])

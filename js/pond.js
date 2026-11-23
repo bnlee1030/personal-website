@@ -3,7 +3,7 @@
   const W = 1922, H = 1381;                    // painting size in px
   const FISH_BOX = { x0: 100, y0: 280, x1: 1680, y1: 1170 }; // area that must stay visible
   const SECTION_BG = {                         // which part of the pond each section shows
-    about: "8% 62%", blog: "30% 18%", music: "96% 22%", work: "45% 100%",
+    about: "8% 62%", blog: "30% 18%", music: "96% 22%", professional: "45% 100%",
   };
   const SITE_TITLE = document.title;
 
@@ -11,6 +11,8 @@
   const pond = document.getElementById("pond");
   const stage = document.getElementById("stage");
   const ripples = document.getElementById("ripples");
+  const bgImg = stage.querySelector(".stage__bg");
+  const signature = document.getElementById("signature");
   const shore = document.getElementById("shore");
   const shoreBg = shore.querySelector(".shore__bg");
   const sections = [...shore.querySelectorAll(".section")];
@@ -33,29 +35,47 @@
   // hit-test order: top-most first (later in DOM = on top)
   const hitOrder = fishEls.map((el) => fish[el.dataset.fish]).reverse();
 
-  /* ---------- layout: fit the painting to the viewport ---------- */
-  let scale = 0.5, tx = 0, ty = 0;
+  /* ---------- layout: fit the painting to the viewport ----------
+     On tall, narrow screens (phones) the pond is turned a quarter turn, so the
+     fish swim up the screen and the painting fills it instead of sitting in a
+     thin band. Seen from above, a pond has no "up", so nothing looks wrong. */
+  let scale = 0.5, tx = 0, ty = 0, rotated = false;
   function layout() {
     const vw = innerWidth, vh = innerHeight;
-    const top = vw < 560 ? 64 : 72, bottom = vw < 560 ? 84 : 96, side = vw < 560 ? 12 : 40;
-    // on tall narrow screens, let the big fish's tail run off the left edge a little
-    const box = vw / vh < 0.8 ? { ...FISH_BOX, x0: 260 } : FISH_BOX;
+    rotated = vw / vh < 0.75;
+    body.classList.toggle("rotated", rotated);
+    const small = vw < 560;
+    const top = small ? 60 : 72, bottom = small ? 56 : 80, side = small ? 8 : 40;
+    // work in the frame as it appears on screen
+    const RW = rotated ? H : W, RH = rotated ? W : H;
+    const b = FISH_BOX;
+    const box = rotated
+      ? { x0: b.y0, x1: b.y1, y0: W - b.x1, y1: W - b.x0 }
+      : b;
     const bw = box.x1 - box.x0, bh = box.y1 - box.y0;
-    const cover = Math.max(vw / W, vh / H);
+    const cover = Math.max(vw / RW, vh / RH);
     const fit = Math.min((vw - side * 2) / bw, (vh - top - bottom) / bh);
     scale = Math.min(cover, fit);
-    const cx = (box.x0 + box.x1) / 2, cy = (box.y0 + box.y1) / 2;
-    tx = vw / 2 - cx * scale;
-    ty = (top + vh - bottom) / 2 - cy * scale;
+    tx = vw / 2 - (box.x0 + box.x1) / 2 * scale;
+    ty = (top + vh - bottom) / 2 - (box.y0 + box.y1) / 2 * scale;
     // when the painting is larger than the screen, never show past its edges
-    if (W * scale >= vw) tx = Math.min(0, Math.max(vw - W * scale, tx));
-    if (H * scale >= vh) ty = Math.min(0, Math.max(vh - H * scale, ty));
+    if (RW * scale >= vw) tx = Math.min(0, Math.max(vw - RW * scale, tx));
+    if (RH * scale >= vh) ty = Math.min(0, Math.max(vh - RH * scale, ty));
     stage.style.setProperty("--s", scale);
     stage.style.setProperty("--tx", tx + "px");
-    stage.style.setProperty("--ty", ty + "px");
+    stage.style.setProperty("--ty", (rotated ? ty + W * scale : ty) + "px");
+    stage.style.setProperty("--rot", rotated ? "-90deg" : "0deg");
+    // the signature would read sideways when turned: swap in a copy without it
+    // and show the signature upright in the corner instead
+    const bgSrc = rotated ? "assets/background-nosig.webp" : "assets/background.webp";
+    if (!bgImg.src.endsWith(bgSrc)) bgImg.src = bgSrc;
+    signature.style.width = Math.round(112 * scale) + "px";
   }
   addEventListener("resize", layout);
   layout();
+
+  // direction of a fish's heading as seen on screen
+  const screenHeading = (f) => (rotated ? { x: f.hy, y: -f.hx } : { x: f.hx, y: f.hy });
 
   /* ---------- pixel-accurate hit testing on the fish ---------- */
   const A = 4; // alpha map downsample
@@ -75,7 +95,8 @@
   Object.values(fish).forEach(buildAlpha);
 
   function toPainting(e) {
-    return { x: (e.clientX - tx) / scale, y: (e.clientY - ty) / scale };
+    const u = (e.clientX - tx) / scale, v = (e.clientY - ty) / scale;
+    return rotated ? { x: W - v, y: u } : { x: u, y: v };
   }
   function fishAt(p) {
     for (const f of hitOrder) {
@@ -215,7 +236,8 @@
       light(name);
       leftBy = f;
       await Promise.race([swimOff(f), wait(700)]);
-      pond.style.transform = `translate(${-f.hx * 6}vw, ${-f.hy * 6}vh) scale(1.03)`;
+      const sh = screenHeading(f);
+      pond.style.transform = `translate(${-sh.x * 6}vw, ${-sh.y * 6}vh) scale(1.03)`;
       pond.classList.add("away");
       await wait(450);
     } else {
@@ -225,10 +247,11 @@
 
     sections.forEach((s) => (s.hidden = s.dataset.route !== name));
     const sec = sections.find((s) => s.dataset.route === name);
+    const dir = screenHeading(f);
     sec.style.setProperty("--in", f.hx > 0 ? -1 : 1);
     shoreBg.style.setProperty("--bgpos", SECTION_BG[name] || "50% 50%");
-    shoreBg.style.setProperty("--bgx", f.hx * 80 + "px");
-    shoreBg.style.setProperty("--bgy", f.hy * 80 + "px");
+    shoreBg.style.setProperty("--bgx", dir.x * 80 + "px");
+    shoreBg.style.setProperty("--bgy", dir.y * 80 + "px");
     shore.hidden = false;
     shore.scrollTop = 0;
     shore.getBoundingClientRect(); // commit start state before transitioning
