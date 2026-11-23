@@ -1,0 +1,361 @@
+/* ------------------------------------------------------------------
+   Pond: a personal site built on an ink painting of carp.
+   ------------------------------------------------------------------ */
+:root {
+  --paper: #dad1c3;
+  --paper-light: #e4ddd1;
+  --ink: #26303a;
+  --ink-soft: #4d5864;
+  --ink-faint: rgba(38, 48, 58, 0.38);
+  --seal: #a8362b;
+  --display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --body: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --ease-out: cubic-bezier(.22, .8, .24, 1);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+a { color: inherit; }
+img { display: block; }
+.defs { position: absolute; }
+
+/* --- Name / seal, top-left -------------------------------------- */
+.mark {
+  position: fixed; top: 22px; left: 24px; z-index: 20;
+}
+.mark__link {
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none;
+}
+.seal {
+  display: grid; place-items: center;
+  width: 30px; height: 30px;
+  background: var(--seal);
+  color: #f1e6da;
+  font-family: var(--display);
+  font-weight: 600; font-size: 14px; letter-spacing: .02em;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.12);
+}
+.mark__text { display: flex; flex-direction: column; line-height: 1.15; }
+.mark__name {
+  font-family: var(--display);
+  font-size: 21px; font-weight: 500; letter-spacing: .04em;
+}
+.mark__tag {
+  font-family: var(--display); font-style: italic;
+  font-size: 15px; color: var(--ink-soft);
+}
+
+/* --- The pond ---------------------------------------------------- */
+.pond {
+  position: fixed; inset: 0;
+  overflow: hidden;
+  transition: opacity .9s ease, transform 1.1s var(--ease-out), filter .9s ease;
+}
+.stage {
+  position: absolute; left: 0; top: 0;
+  width: 1922px; height: 1381px;
+  transform-origin: 0 0;
+  transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(var(--s, .5));
+}
+.stage__bg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  user-select: none;
+  /* melt the painting's edges into the page */
+  -webkit-mask-image:
+    linear-gradient(to right, transparent, #000 6%, #000 94%, transparent),
+    linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent, #000 6%, #000 94%, transparent),
+    linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent);
+  mask-composite: intersect;
+}
+
+/* --- Fish -------------------------------------------------------- */
+.fish {
+  position: absolute;
+  left: calc(var(--x) * 1px); top: calc(var(--y) * 1px);
+  width: calc(var(--w) * 1px); height: calc(var(--h) * 1px);
+  outline: none;
+  pointer-events: none; /* clicks are hit-tested against the fish's pixels in JS */
+  transition: opacity .6s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.fish__sway {
+  position: absolute; inset: 0;
+  transform-origin: var(--px) var(--py);
+  animation: sway var(--dur) ease-in-out var(--delay) infinite;
+}
+.fish img {
+  width: 100%; height: 100%;
+  user-select: none; pointer-events: none;
+  filter: url(#water);
+  animation: drift calc(var(--dur) * 1.7) ease-in-out var(--delay) infinite;
+  transition: transform .8s var(--ease-out);
+}
+/* rotate gently around the head, so the tail does the swaying */
+@keyframes sway {
+  0%, 100% { transform: rotate(-0.9deg); }
+  50%      { transform: rotate(1.1deg); }
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0); }
+  33%      { transform: translate(5px, -4px); }
+  66%      { transform: translate(-4px, 3px); }
+}
+
+/* hover / focus / legend highlight */
+.stage.has-lit .fish:not(.lit) { opacity: .45; }
+.fish.lit img { transform: translate(0, -3px) scale(1.012); }
+.fish:focus-visible .fish__label { text-decoration: underline; text-underline-offset: .2em; }
+
+.fish__label {
+  position: absolute;
+  left: var(--lx); top: var(--ly);
+  transform: translate(-50%, calc(-100% + 6px));  /* (lx, ly) is the label's bottom-centre */
+  font-family: var(--display);
+  font-style: italic;
+  font-size: calc(var(--fs, 22px) / var(--s, .5));
+  letter-spacing: .03em;
+  color: var(--ink);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .45s ease, transform .6s var(--ease-out);
+  text-shadow: 0 0 calc(10px / var(--s, .5)) var(--paper-light), 0 0 calc(4px / var(--s, .5)) var(--paper-light);
+}
+.fish__label::before {
+  content: "";
+  display: block;
+  width: calc(26px / var(--s, .5)); height: calc(1px / var(--s, .5));
+  margin: 0 auto calc(6px / var(--s, .5));
+  background: var(--ink-faint);
+}
+.fish.lit .fish__label { opacity: 1; transform: translate(-50%, -100%); }
+
+/* touch screens have no hover: show the names quietly */
+@media (hover: none) {
+  .fish__label { opacity: .8; transform: translate(-50%, -100%); }
+}
+
+/* --- Ripples ----------------------------------------------------- */
+.ripples { position: absolute; inset: 0; pointer-events: none; }
+.ripple {
+  position: absolute;
+  width: 220px; height: 120px;
+  margin: -60px 0 0 -110px;
+  border-radius: 50%;
+  border: 2px solid rgba(38, 48, 58, .22);
+  transform: scale(.05);
+  opacity: 0;
+  animation: ripple 3.4s cubic-bezier(.2, .6, .3, 1) forwards;
+}
+.ripple.r2 { animation-delay: .35s; border-width: 1.5px; }
+@keyframes ripple {
+  0%   { transform: scale(.05); opacity: 0; }
+  12%  { opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* --- Legend (the visible menu) ---------------------------------- */
+.legend {
+  position: fixed; left: 50%; bottom: 18px; z-index: 10;
+  transform: translateX(-50%);
+  padding: 10px 28px 8px;
+  text-align: center;
+  white-space: nowrap;
+  background: radial-gradient(closest-side, rgba(228,221,209,.92), rgba(228,221,209,.7) 60%, rgba(228,221,209,0));
+  transition: opacity .6s ease;
+}
+.legend__hint {
+  margin: 0 0 8px;
+  font-family: var(--display); font-style: italic;
+  font-size: 15px; color: var(--ink-soft);
+  letter-spacing: .02em;
+}
+.legend ul {
+  display: inline-flex; gap: 6px; margin: 0; padding: 0; list-style: none;
+}
+.legend li + li::before {
+  content: "·"; margin-right: 6px; color: var(--ink-faint);
+}
+.legend a {
+  font-family: var(--display); font-size: 19px; font-weight: 500;
+  letter-spacing: .14em; text-transform: uppercase; font-size: 14px;
+  text-decoration: none; color: var(--ink-soft);
+  padding: 6px 6px;
+  transition: color .3s ease;
+}
+.legend a:hover, .legend a:focus-visible, .legend a.lit { color: var(--ink); }
+
+/* --- Leaving the pond -------------------------------------------- */
+body.leaving .legend { opacity: 0; }
+body.leaving .fish__label { opacity: 0 !important; }
+body.leaving .stage.has-lit .fish:not(.lit) { opacity: 1; }
+.pond.away { opacity: 0; filter: blur(3px); pointer-events: none; }
+
+/* --- Sections ("another part of the pond") ----------------------- */
+.shore {
+  position: fixed; inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  opacity: 0;
+  transition: opacity .8s ease;
+}
+.shore.shown { opacity: 1; }
+.shore[hidden] { display: none; }
+.shore__bg {
+  position: fixed; inset: -4%;
+  background: url(../assets/background.webp) var(--bgpos, 80% 90%) / 140% auto no-repeat, var(--paper);
+  opacity: .32;
+  filter: blur(1.5px);
+  pointer-events: none;
+  transform: translate(var(--bgx, 0), var(--bgy, 0));
+  transition: transform 1.4s var(--ease-out);
+}
+.shore.shown .shore__bg { --bgx: 0 !important; --bgy: 0 !important; }
+.shore::before {
+  /* soft wash so the text has calm paper behind it */
+  content: ""; position: fixed; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 60% 80% at 50% 45%, rgba(228,221,209,.92), rgba(228,221,209,.55) 70%, rgba(228,221,209,.2));
+}
+
+.section {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 120px 24px 80px;
+  font-size: 18px; line-height: 1.7;
+}
+.section[hidden] { display: none; }
+.section > *:not(.section__fish) {
+  opacity: 0; transform: translateY(14px);
+  transition: opacity .8s ease, transform 1s var(--ease-out);
+}
+.shore.shown .section > * { opacity: 1; transform: none; }
+.shore.shown .section > :nth-child(2) { transition-delay: .25s; }
+.shore.shown .section > :nth-child(3) { transition-delay: .35s; }
+.shore.shown .section > :nth-child(4) { transition-delay: .45s; }
+.shore.shown .section > :nth-child(n+5) { transition-delay: .55s; }
+
+.section__fish {
+  width: 240px; margin: 0 0 18px -8px;
+  opacity: 0;
+}
+.section__fish img {
+  width: 100%; height: auto;
+  animation: sway 9s ease-in-out infinite, drift 14s ease-in-out infinite;
+  transform-origin: 95% 50%;
+}
+.section[data-route="music"] .section__fish { width: 170px; }
+.section[data-route="music"] .section__fish img { transform-origin: 5% 10%; }
+.shore.shown .section__fish { animation: swim-in 1.6s var(--ease-out) .1s forwards; }
+@keyframes swim-in {
+  from { opacity: 0; transform: translateX(calc(var(--in, -1) * 120px)); }
+  to   { opacity: 1; transform: none; }
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--display);
+  text-transform: uppercase; letter-spacing: .22em; font-size: 13px; font-weight: 600;
+  color: var(--seal);
+}
+.section h1:focus { outline: none; }
+.section h1 {
+  margin: 6px 0 22px;
+  font-family: var(--display); font-weight: 500;
+  font-size: clamp(38px, 6vw, 54px); line-height: 1.08; letter-spacing: -.005em;
+}
+.section h2 {
+  margin: 48px 0 12px;
+  font-family: var(--display); font-weight: 600;
+  font-size: 15px; text-transform: uppercase; letter-spacing: .18em;
+  color: var(--ink-soft);
+}
+.lede { font-size: 20px; color: var(--ink-soft); }
+.section a { text-decoration-color: var(--ink-faint); text-underline-offset: .18em; }
+.section a:hover { text-decoration-color: var(--seal); }
+.note { font-size: 15px; color: var(--ink-soft); font-style: italic; }
+
+.links { display: flex; gap: 22px; padding: 0; list-style: none; margin-top: 32px; }
+
+.posts { list-style: none; padding: 0; margin: 28px 0 0; }
+.posts a {
+  display: grid; grid-template-columns: 100px 1fr; gap: 16px; align-items: baseline;
+  padding: 16px 0; border-top: 1px solid var(--ink-faint);
+  text-decoration: none;
+}
+.posts li:last-child a { border-bottom: 1px solid var(--ink-faint); }
+.posts time { font-size: 14px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.posts span { font-family: var(--display); font-size: 24px; font-weight: 500; }
+.posts a:hover span { color: var(--seal); }
+
+.tracks { margin: 28px 0; border-top: 1px solid var(--ink-faint); }
+.track {
+  display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: baseline;
+  padding: 14px 0; border-bottom: 1px solid var(--ink-faint);
+}
+.track__n { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.track__t { font-family: var(--display); font-size: 22px; font-weight: 500; }
+.track__m { font-size: 14px; color: var(--ink-soft); }
+
+.timeline { display: grid; grid-template-columns: 120px 1fr; gap: 10px 20px; margin: 0; }
+.timeline dt { font-size: 14px; color: var(--ink-soft); padding-top: 4px; font-variant-numeric: tabular-nums; }
+.timeline dd { margin: 0 0 12px; }
+.timeline dd span { color: var(--ink-soft); font-size: 16px; }
+.timeline strong, .pubs a { font-weight: 600; }
+
+.pubs { list-style: none; padding: 0; margin: 0; }
+.pubs li { padding: 8px 0; }
+.pubs span { display: block; font-size: 15px; color: var(--ink-soft); font-style: italic; }
+
+.back {
+  position: fixed; left: 24px; bottom: 24px; z-index: 5;
+  font-family: var(--display); font-style: italic; font-size: 17px;
+  text-decoration: none; color: var(--ink-soft);
+  padding: 8px 14px 8px 30px;
+  background: rgba(228,221,209,.8);
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  opacity: 0; transition: opacity .6s ease .6s, color .3s ease;
+}
+.back::before {
+  content: ""; position: absolute; left: 13px; top: 50%;
+  width: 10px; height: 1px; background: currentColor;
+}
+.shore.shown .back { opacity: 1; }
+.back:hover { color: var(--ink); }
+
+body[data-view="section"] .mark__name { opacity: .9; }
+
+@media (max-width: 560px) {
+  .mark { top: 16px; left: 16px; }
+  .mark__name { font-size: 19px; }
+  .fish__label { --fs: 17px; }
+  .legend { bottom: 20px; }
+  .legend a { font-size: 13px; letter-spacing: .1em; padding: 6px 3px; }
+  .section { padding: 96px 16px 100px; font-size: 17px; }
+  .section__fish { width: 180px; }
+  .timeline { grid-template-columns: 1fr; gap: 0; }
+  .timeline dt { padding-top: 10px; }
+  .posts a { grid-template-columns: 1fr; gap: 2px; }
+  .back { left: 16px; bottom: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fish__sway, .fish img, .section__fish img { animation: none !important; }
+  .fish img { filter: none; }
+  .ripple { display: none; }
+  .pond, .shore, .section > * { transition-duration: .3s !important; }
+}

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your Name</title>
+  <meta name="description" content="A quiet pond. Each fish leads somewhere.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600&display=swap" rel="stylesheet">
+  <link rel="preload" as="image" href="assets/background.webp">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-view="pond">
+
+  <!-- Water ripple used on the fish. Kept tiny so it stays cheap. -->
+  <svg class="defs" aria-hidden="true" width="0" height="0">
+    <filter id="water" x="-5%" y="-10%" width="110%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.018" numOctaves="1" seed="3" result="n">
+        <animate attributeName="baseFrequency" dur="14s" values="0.006 0.018;0.008 0.022;0.006 0.018" repeatCount="indefinite"/>
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
+  <header class="mark">
+    <a href="#/" class="mark__link" aria-label="Back to the pond">
+      <span class="seal" aria-hidden="true">YN</span>
+      <span class="mark__text">
+        <span class="mark__name">Your Name</span>
+        <span class="mark__tag">a few words about you</span>
+      </span>
+    </a>
+  </header>
+
+  <!-- ============ THE POND (home) ============ -->
+  <main class="pond" id="pond" aria-label="Home">
+    <div class="stage" id="stage">
+      <img class="stage__bg" src="assets/background.webp" alt="" draggable="false">
+      <div class="ripples" id="ripples" aria-hidden="true"></div>
+
+      <!-- Each fish is a link. Positions are in painting pixels (see assets/fish.json). -->
+      <a class="fish" href="#/blog"  data-fish="blog"  style="--x:441;--y:295;--w:405;--h:102;--px:99%;--py:64%;--dur:9s;--delay:-2s"
+         data-heading="1,0.06" aria-label="Writing">
+        <span class="fish__sway"><img src="assets/fish-blog.webp" alt="" draggable="false"></span>
+        <span class="fish__label" style="--lx:-15%;--ly:78%">Writing</span>
+      </a>
+      <a class="fish" href="#/about" data-fish="about" style="--x:114;--y:497;--w:1005;--h:434;--px:99%;--py:35%;--dur:11s;--delay:0s"
+         data-heading="1,-0.12" aria-label="About">
+        <span class="fish__sway"><img src="assets/fish-about.webp" alt="" draggable="false"></span>
+        <span class="fish__label" style="--lx:48%;--ly:37%">About</span>
+      </a>
+      <a class="fish" href="#/music" data-fish="music" style="--x:1165;--y:383;--w:497;--h:594;--px:4%;--py:8%;--dur:10s;--delay:-5s"
+         data-heading="-1,-0.35" aria-label="Music">
+        <span class="fish__sway"><img src="assets/fish-music.webp" alt="" draggable="false"></span>
+        <span class="fish__label" style="--lx:46%;--ly:6%">Music</span>
+      </a>
+      <a class="fish" href="#/work"  data-fish="work"  style="--x:651;--y:865;--w:424;--h:272;--px:98%;--py:77%;--dur:8s;--delay:-3s"
+         data-heading="1,0.3" aria-label="Work">
+        <span class="fish__sway"><img src="assets/fish-work.webp" alt="" draggable="false"></span>
+        <span class="fish__label" style="--lx:-12%;--ly:64%">Work</span>
+      </a>
+    </div>
+
+    <nav class="legend" aria-label="Sections">
+      <p class="legend__hint">Each fish leads somewhere</p>
+      <ul>
+        <li><a href="#/about" data-for="about">About</a></li>
+        <li><a href="#/blog"  data-for="blog">Writing</a></li>
+        <li><a href="#/music" data-for="music">Music</a></li>
+        <li><a href="#/work"  data-for="work">Work</a></li>
+      </ul>
+    </nav>
+  </main>
+
+  <!-- ============ SECTIONS ("other parts of the pond") ============ -->
+  <div class="shore" id="shore" hidden>
+    <div class="shore__bg" aria-hidden="true"></div>
+
+    <article class="section" data-route="about" hidden>
+      <div class="section__fish"><img src="assets/fish-about.webp" alt=""></div>
+      <p class="eyebrow">About</p>
+      <h1>Hello, I’m Your Name.</h1>
+      <p class="lede">A sentence or two about who you are, what you care about, and what you spend your days doing.</p>
+      <p>Write a few short paragraphs here. Where you grew up, what you’re curious about, what you’re working on right now. Keep it warm and plain; this is the part of the site people read to get a sense of you.</p>
+      <p>The painting on the front page has a story too, if you’d like to tell it.</p>
+      <ul class="links">
+        <li><a href="mailto:you@example.com">Email</a></li>
+        <li><a href="#">LinkedIn</a></li>
+        <li><a href="#">GitHub</a></li>
+      </ul>
+    </article>
+
+    <article class="section" data-route="blog" hidden>
+      <div class="section__fish"><img src="assets/fish-blog.webp" alt=""></div>
+      <p class="eyebrow">Writing</p>
+      <h1>Notes from the pond</h1>
+      <ol class="posts">
+        <li><a href="#"><time datetime="2026-11-01">Nov 2026</time><span>Title of a recent post</span></a></li>
+        <li><a href="#"><time datetime="2026-09-14">Sep 2026</time><span>Another thing I wrote</span></a></li>
+        <li><a href="#"><time datetime="2026-06-03">Jun 2026</time><span>An older post</span></a></li>
+      </ol>
+    </article>
+
+    <article class="section" data-route="music" hidden>
+      <div class="section__fish"><img src="assets/fish-music.webp" alt=""></div>
+      <p class="eyebrow">Music</p>
+      <h1>Music</h1>
+      <p class="lede">What you play, what you write, who you play it with.</p>
+      <div class="tracks">
+        <div class="track"><span class="track__n">01</span><span class="track__t">Track or project name</span><span class="track__m">2026 · piano</span></div>
+        <div class="track"><span class="track__n">02</span><span class="track__t">Another recording</span><span class="track__m">2025 · with a friend</span></div>
+        <div class="track"><span class="track__n">03</span><span class="track__t">A live set</span><span class="track__m">2024</span></div>
+      </div>
+      <p class="note">Spotify, Bandcamp or SoundCloud embeds can go here.</p>
+    </article>
+
+    <article class="section" data-route="work" hidden>
+      <div class="section__fish"><img src="assets/fish-work.webp" alt=""></div>
+      <p class="eyebrow">Work</p>
+      <h1>Work &amp; background</h1>
+      <p class="lede">A one-line summary of what you do professionally. <a href="resume.pdf">Download résumé (PDF)</a></p>
+
+      <h2>Experience</h2>
+      <dl class="timeline">
+        <dt>2023 – now</dt><dd><strong>Role title</strong>, Company<br><span>What you work on, in a sentence.</span></dd>
+        <dt>2020 – 2023</dt><dd><strong>Role title</strong>, Company<br><span>What you worked on, in a sentence.</span></dd>
+      </dl>
+
+      <h2>Publications</h2>
+      <ul class="pubs">
+        <li><a href="#">Title of a paper or article</a><span>Venue, 2025</span></li>
+        <li><a href="#">Another publication</a><span>Venue, 2023</span></li>
+      </ul>
+
+      <h2>Education</h2>
+      <dl class="timeline">
+        <dt>2016 – 2020</dt><dd><strong>Degree</strong>, University</dd>
+      </dl>
+    </article>
+
+    <a class="back" href="#/">Back to the pond</a>
+  </div>
+
+  <script src="js/pond.js"></script>
+</body>
+</html>
