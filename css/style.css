@@ -348,6 +348,14 @@ body.leaving .stage.has-lit .fish:not(.lit) { opacity: 1; }
   padding: 11px 0; border-top: 1px solid var(--ink-faint);
 }
 .papers li:last-child { border-bottom: 1px solid var(--ink-faint); }
+.papers > li > :first-child { font-size: 14px; color: var(--ink-soft); }
+.papers a { text-decoration: none; }
+.papers a:hover cite { color: var(--seal); }
+.papers a cite { transition: color .2s ease; }
+.section .papers-sub {
+  margin: 34px 0 6px; font-family: var(--display); font-weight: 600;
+  font-size: 13px !important; text-transform: uppercase; letter-spacing: .16em; color: var(--ink-soft);
+}
 .papers time { font-size: 14px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .papers cite { font-style: normal; font-family: var(--display); font-size: 21px; font-weight: 500; line-height: 1.3; }
 
