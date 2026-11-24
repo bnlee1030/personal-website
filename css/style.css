@@ -36,14 +36,8 @@ img { display: block; }
   text-decoration: none;
 }
 .seal {
-  display: grid; place-items: center;
-  width: 30px; height: 30px;
-  background: var(--seal);
-  color: #f1e6da;
-  font-family: var(--display);
-  font-weight: 600; font-size: 14px; letter-spacing: .02em;
-  border-radius: 3px;
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,.12);
+  width: 36px; height: 36px;
+  user-select: none;
 }
 .mark__name {
   font-family: var(--display);

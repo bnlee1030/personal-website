@@ -26,7 +26,7 @@ python3 -m http.server 8000
 
 All text is in `index.html`:
 
-- **Name and stamp**: the `.mark` header near the top, plus `<title>`. The red square is a placeholder for your name stamp; there's a comment showing where the stamp image goes.
+- **Name and stamp**: the `.mark` header near the top, plus `<title>`. The red seal and favicon come from your name stamp (`tools/extract_stamp.py` cuts it out of `tools/source-stamp.jpg`).
 - **Sections**: each one is an `<article class="section" data-route="...">` block. Replace the placeholder text, links, posts, tracks, jobs and publications.
 - **Résumé**: put a `resume.pdf` next to `index.html`; the Professional page already links to it.
 - **Which fish goes where**: change a fish's `href` and `aria-label` in the pond, plus its `data-route` section.
