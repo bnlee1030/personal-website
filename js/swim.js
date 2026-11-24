@@ -2,37 +2,66 @@
    While a fish swims, its picture is redrawn with WebGL and bent by a wave
    that runs from head to tail along its backbone (small at the head, widest
    at the tail), while the pectoral fins row back and forth.
-   Usage: const s = makeSwimmer(fishEl, spine, box); s.start(); s.set(freq, amp); s.stop();
+   Usage: const s = makeSwimmer(fishEl, spine, box, tailSweep); s.start(); s.set(freq, amp); s.stop();
    Returns null if WebGL isn't available; the fish then just glides. */
 (() => {
-  const MARGIN = 70; // room around the sprite for the tail to swing into (painting px)
+  const MARGIN = 150; // room around the sprite for the tail to swing into (painting px)
   const FIELD_STEP = 4; // backbone map resolution (painting px)
 
   const VERT = `
     attribute vec2 a; varying vec2 v;
     void main() { v = vec2(a.x * .5 + .5, .5 - a.y * .5); gl_Position = vec4(a, 0., 1.); }`;
   const FRAG = `
-    precision mediump float;
+    precision highp float;
     varying vec2 v;
     uniform sampler2D img, field;
     uniform vec2 size, off, imgSize;
-    uniform float phase, finPhase, amp, len;
-    void main() {
-      vec4 f = texture2D(field, v);
+    uniform float phase, finPhase, amp, len, tail;
+    // how far the point that starts at q (canvas px) is moved
+    vec2 disp(vec2 q) {
+      vec4 f = texture2D(field, q / size);
       vec2 n = f.rg * 2. - 1.;       // backbone normal
       vec2 t = vec2(n.y, -n.x);      // backbone direction
       float s = f.b;                 // 0 at the head, 1 at the tail
       float d = f.a;                 // distance from the backbone
-      // body wave: one wavelength along the body, travelling head -> tail
-      float a = amp * len * .032 * (.06 + .94 * pow(s, 1.7));
-      float lat = a * sin(6.2832 * s * .9 - phase);
+      // body wave: one wavelength along the body, travelling head -> tail,
+      // plus an extra side-to-side sweep of the tail itself
+      float wave = amp * len * .028 * (.05 + .95 * pow(s, 1.7)) * sin(6.2832 * s * .9 - phase);
+      // the tail sweeps as one piece, a little behind the body wave
+      float sweep = amp * len * tail * smoothstep(.5, 1., s) * sin(6.2832 * .8 - phase);
+      float lat = wave + sweep;
       // fins: parts far from the backbone in the front half row to and fro
       float fin = amp * len * .014 * smoothstep(.36, .56, d) * (1. - smoothstep(.42, .66, s)) * sin(finPhase);
-      vec2 p = v * size - n * lat - t * fin;
-      vec2 uv = (p - off) / imgSize;
+      return n * lat + t * fin;
+    }
+    void main() {
+      // find the source point that lands here: solve q + disp(q) = p
+      vec2 p = v * size, q = p;
+      for (int i = 0; i < 5; i++) q = p - disp(q);
+      vec2 uv = (q - off) / imgSize;
       if (uv.x < 0. || uv.y < 0. || uv.x > 1. || uv.y > 1.) { gl_FragColor = vec4(0.); return; }
       gl_FragColor = texture2D(img, uv);
     }`;
+
+  function boxBlur(A, w, h, r) {
+    const tmp = new Float32Array(A.length);
+    for (let y = 0; y < h; y++) {           // rows
+      let acc = 0, n = 0;
+      for (let x = -r; x < w + r; x++) {
+        if (x + r < w) { acc += A[y * w + x + r]; n++; }
+        if (x - r - 1 >= 0) { acc -= A[y * w + x - r - 1]; n--; }
+        if (x >= 0 && x < w) tmp[y * w + x] = acc / n;
+      }
+    }
+    for (let x = 0; x < w; x++) {           // columns
+      let acc = 0, n = 0;
+      for (let y = -r; y < h + r; y++) {
+        if (y + r < h) { acc += tmp[(y + r) * w + x]; n++; }
+        if (y - r - 1 >= 0) { acc -= tmp[(y - r - 1) * w + x]; n--; }
+        if (y >= 0 && y < h) A[y * w + x] = acc / n;
+      }
+    }
+  }
 
   // For every point around the fish: nearest point on the backbone polyline
   // -> normal, how far along (head 0 .. tail 1), and distance.
@@ -47,7 +76,8 @@
       segs.push({ ax, ay, dx: (bx - ax) / l, dy: (by - ay) / l, l, start: total });
       total += l;
     }
-    const data = new Uint8Array(fw * fh * 4);
+    const N = fw * fh;
+    const NX = new Float32Array(N), NY = new Float32Array(N), S = new Float32Array(N), D = new Float32Array(N);
     const maxD = total * 0.25;
     for (let j = 0; j < fh; j++) for (let i = 0; i < fw; i++) {
       const px = box.x - MARGIN + (i + .5) * FIELD_STEP, py = box.y - MARGIN + (j + .5) * FIELD_STEP;
@@ -58,16 +88,25 @@
         const d2 = (px - qx) ** 2 + (py - qy) ** 2;
         if (d2 < best) { best = d2; bs = (g.start + along) / total; bnx = -g.dy; bny = g.dx; }
       }
-      const k = (j * fw + i) * 4;
-      data[k] = (bnx * .5 + .5) * 255;
-      data[k + 1] = (bny * .5 + .5) * 255;
-      data[k + 2] = bs * 255;
-      data[k + 3] = Math.min(Math.sqrt(best) / maxD, 1) * 255;
+      const k = j * fw + i;
+      NX[k] = bnx; NY[k] = bny; S[k] = bs; D[k] = Math.min(Math.sqrt(best) / maxD, 1);
+    }
+    // Smooth the map: where two parts of the backbone are equally near
+    // (inside a curve, around a joint) the nearest point jumps, which would
+    // tear the picture once it bends. Blurring turns jumps into gentle turns.
+    for (const A of [NX, NY, S]) for (let pass = 0; pass < 3; pass++) boxBlur(A, fw, fh, 5);
+    const data = new Uint8Array(N * 4);
+    for (let k = 0; k < N; k++) {
+      const l = Math.hypot(NX[k], NY[k]) || 1;
+      data[k * 4] = (NX[k] / l * .5 + .5) * 255;
+      data[k * 4 + 1] = (NY[k] / l * .5 + .5) * 255;
+      data[k * 4 + 2] = S[k] * 255;
+      data[k * 4 + 3] = D[k] * 255;
     }
     return { data, fw, fh, total };
   }
 
-  window.makeSwimmer = function (fishEl, spine, box) {
+  window.makeSwimmer = function (fishEl, spine, box, tail = 0.03) {
     const img = fishEl.querySelector("img");
     const holder = fishEl.querySelector(".fish__sway");
     const canvas = document.createElement("canvas");
@@ -92,7 +131,7 @@
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
       const loc = gl.getAttribLocation(prog, "a");
       gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-      for (const n of ["img", "field", "size", "off", "imgSize", "phase", "finPhase", "amp", "len"]) U[n] = gl.getUniformLocation(prog, n);
+      for (const n of ["img", "field", "size", "off", "imgSize", "phase", "finPhase", "amp", "len", "tail"]) U[n] = gl.getUniformLocation(prog, n);
 
       const tex = (unit, setup) => {
         const t = gl.createTexture();
@@ -112,6 +151,7 @@
       gl.uniform2f(U.off, MARGIN, MARGIN);
       gl.uniform2f(U.imgSize, box.w, box.h);
       gl.uniform1f(U.len, field.total);
+      gl.uniform1f(U.tail, tail);
     } catch (e) {
       return null;
     }

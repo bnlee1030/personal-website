@@ -205,11 +205,13 @@
     professional: [[1082,1075],[1010,1065],[920,1040],[830,1005],[760,962],[715,915],[690,872]],
     blog: [[848,362],[770,352],[680,346],[590,344],[510,340],[445,330]],
   };
+  // how far each tail sweeps side to side, as a fraction of body length
+  const TAIL_SWEEP = { about: .075, music: .075, professional: .05, blog: .045 };
   const swimmers = {};
   function swimmerFor(f) {
     if (!(f.name in swimmers)) {
       swimmers[f.name] = window.makeSwimmer && SPINES[f.name]
-        ? window.makeSwimmer(f.el, SPINES[f.name], f) : null;
+        ? window.makeSwimmer(f.el, SPINES[f.name], f, TAIL_SWEEP[f.name]) : null;
     }
     return swimmers[f.name];
   }
