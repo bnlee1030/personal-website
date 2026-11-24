@@ -40,6 +40,12 @@ FISH = {
     ],
 }
 
+# Areas always kept, where the ink fades into the paper and GrabCut would trim
+# it: the pale lower jaw and throat of the big carp, down to the pectoral fin.
+KEEP = {
+    "about": [[(990,598),(1060,596),(1114,620),(1116,662),(1090,702),(1046,734),(992,760),(962,788),(918,820),(880,760),(900,680)]],
+}
+
 all_mask = np.zeros((H, W), np.uint8)
 meta = {}
 for name, polys in FISH.items():
@@ -57,6 +63,8 @@ for name, polys in FISH.items():
     except cv2.error:
         fg = poly
     fg = cv2.bitwise_and(fg, cv2.dilate(poly, np.ones((9, 9))))
+    for k in KEEP.get(name, []):
+        cv2.fillPoly(fg, [np.array(k, np.int32)], 255)
     # keep only the biggest connected blobs (drop stray seaweed specks)
     n, lab, st, _ = cv2.connectedComponentsWithStats(fg)
     keep = np.zeros_like(fg)
