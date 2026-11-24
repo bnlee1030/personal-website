@@ -4,7 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Brendan Lee</title>
-  <meta name="description" content="A quiet pond. Each fish leads somewhere.">
+  <meta name="description" content="Brendan Lee: finance at CME Group, classical pianist, New York City.">
+  <link rel="canonical" href="https://bnlee.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://bnlee.com/">
+  <meta property="og:title" content="Brendan Lee">
+  <meta property="og:description" content="Finance at CME Group, classical pianist, New York City.">
+  <meta property="og:image" content="https://bnlee.com/assets/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#dad1c3">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
   <link rel="apple-touch-icon" href="assets/favicon-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,6 +25,9 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body data-view="pond">
+  <!-- set the evening look before the first paint (js/pond.js keeps it up to date) -->
+  <script>(function(){var m=new URLSearchParams(location.search).get("mode"),h=new Date().getHours();
+    if(m?m==="evening":(h>=19||h<6))document.body.classList.add("evening");})();</script>
 
   <!-- Water ripple used on the fish. Kept tiny so it stays cheap. -->
   <svg class="defs" aria-hidden="true" width="0" height="0">

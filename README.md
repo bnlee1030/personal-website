@@ -44,6 +44,20 @@ python3 tools/extract_fish.py tools/source-painting.jpg assets
 
 The fish outlines are hand-drawn polygons in that script, refined with GrabCut. To use a different painting, update the crop and polygons, then copy the new numbers from `assets/fish.json` into the fish `style` attributes in `index.html`.
 
+## Evening
+
+From 7pm to 6am (the visitor's own clock) the pond is moonlit: the painting is dimmed and cooled and the text turns light. Add `?mode=evening` or `?mode=day` to the address to see either look at any time.
+
 ## Publishing
 
-Any static host works. For GitHub Pages: Settings → Pages → deploy from the branch, root folder. `.nojekyll` is already there.
+The site is served by GitHub Pages at https://bnlee.com (the `CNAME` file holds the domain). DNS is at Namecheap:
+
+| Type | Host | Value |
+| --- | --- | --- |
+| A | @ | 185.199.108.153 |
+| A | @ | 185.199.109.153 |
+| A | @ | 185.199.110.153 |
+| A | @ | 185.199.111.153 |
+| CNAME | www | bnlee1030.github.io. |
+
+`assets/og.jpg` is the preview image shown when the link is shared.

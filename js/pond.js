@@ -35,6 +35,18 @@
   // hit-test order: top-most first (later in DOM = on top)
   const hitOrder = fishEls.map((el) => fish[el.dataset.fish]).reverse();
 
+  /* ---------- evening: moonlit from 7pm to 6am, visitor's local time ----------
+     Preview either look any time with ?mode=evening or ?mode=day. */
+  function isEvening() {
+    const forced = new URLSearchParams(location.search).get("mode");
+    if (forced === "evening" || forced === "day") return forced === "evening";
+    const h = new Date().getHours();
+    return h >= 19 || h < 6;
+  }
+  const applyMode = () => body.classList.toggle("evening", isEvening());
+  applyMode();
+  setInterval(applyMode, 5 * 60 * 1000); // pick up dusk/dawn if the page stays open
+
   /* ---------- layout: fit the painting to the viewport ----------
      On tall, narrow screens (phones) the pond is turned a quarter turn, so the
      fish swim up the screen and the painting fills it instead of sitting in a
