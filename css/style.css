@@ -93,6 +93,12 @@ img { display: block; }
   animation: drift calc(var(--dur) * 1.7) ease-in-out var(--delay) infinite;
   transition: transform .8s var(--ease-out);
 }
+/* while swimming, the fish is drawn by js/swim.js on a canvas */
+.fish .swimmer { position: absolute; pointer-events: none; }
+.fish.swimming { z-index: 3; } /* the fish on the move passes over the others */
+.fish.gl-swim img { visibility: hidden; }
+.evening .fish .swimmer { filter: var(--moon); }
+
 /* rotate gently around the head, so the tail does the swaying */
 @keyframes sway {
   0%, 100% { transform: rotate(-0.9deg); }

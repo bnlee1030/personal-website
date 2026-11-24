@@ -198,18 +198,48 @@
   })();
 
   /* ---------- swimming ---------- */
+  // each fish's backbone, head to tail (painting px), for the swimming wave
+  const SPINES = {
+    about: [[1112,655],[1010,686],[880,714],[740,738],[600,752],[470,748],[360,722],[285,680],[225,612],[170,555],[110,505]],
+    music: [[1158,428],[1240,438],[1340,470],[1440,520],[1525,585],[1580,665],[1600,755],[1590,840],[1565,915],[1545,975]],
+    professional: [[1082,1075],[1010,1065],[920,1040],[830,1005],[760,962],[715,915],[690,872]],
+    blog: [[848,362],[770,352],[680,346],[590,344],[510,340],[445,330]],
+  };
+  const swimmers = {};
+  function swimmerFor(f) {
+    if (!(f.name in swimmers)) {
+      swimmers[f.name] = window.makeSwimmer && SPINES[f.name]
+        ? window.makeSwimmer(f.el, SPINES[f.name], f) : null;
+    }
+    return swimmers[f.name];
+  }
+  // ease the swimmer's tail-beat speed and strength from one value to another
+  function ramp(sw, from, to, ms, done) {
+    if (!sw) return done && done();
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / ms), e = k * k * (3 - 2 * k);
+      sw.set(from[0] + (to[0] - from[0]) * e, from[1] + (to[1] - from[1]) * e);
+      k < 1 ? requestAnimationFrame(step) : done && done();
+    };
+    requestAnimationFrame(step);
+  }
+
   const swimAnims = new Map();
   function swimOff(f) {
     const d = 2600;
     f.el.classList.add("swimming");
-    const sway = f.el.querySelector(".fish__sway");
-    sway.style.animationDuration = "1.2s";
+    const sw = swimmerFor(f);
+    if (sw) {
+      sw.set(1.4, .5); sw.start();
+      ramp(sw, [1.4, .5], [3.6, 1], 1000);  // beats faster and harder as it speeds up
+    }
     const a = f.el.animate([
       { transform: "translate(0,0)", opacity: 1 },
-      { transform: `translate(${-f.hx * 24}px, ${-f.hy * 24}px)`, opacity: 1, offset: 0.14 },
-      { transform: `translate(${f.hx * d * 0.35}px, ${f.hy * d * 0.35}px)`, opacity: 1, offset: 0.55 },
-      { transform: `translate(${f.hx * d}px, ${f.hy * d}px) scale(.92)`, opacity: 0 },
-    ], { duration: 1500, easing: "cubic-bezier(.45,0,.7,.55)", fill: "forwards" });
+      { opacity: 1, offset: .72 },
+      { transform: `translate(${f.hx * d}px, ${f.hy * d}px)`, opacity: 0 },
+    ], { duration: 1750, easing: "cubic-bezier(.55,0,.8,.5)", fill: "forwards" });
+    a.finished.then(() => sw && sw.pause()).catch(() => {});
     swimAnims.set(f.name, a);
     // the others flinch away a little
     Object.values(fish).forEach((o) => {
@@ -230,15 +260,19 @@
     if (a) a.cancel();
     swimAnims.delete(f.name);
     f.el.classList.remove("swimming");
-    const sway = f.el.querySelector(".fish__sway");
-    sway.style.animationDuration = "";
-    if (reduceMotion) return;
-    const d = 900;
+    const sw = swimmerFor(f);
+    if (reduceMotion) { sw && sw.stop(); return; }
+    const d = 900, ms = 2000;
+    if (sw) {
+      sw.set(3, 1); sw.start();
+      // slow the tail as it glides home, then settle back into the painting
+      ramp(sw, [3, 1], [.9, 0], ms + 250, () => sw.stop());
+    }
     f.el.animate([
       { transform: `translate(${-f.hx * d}px, ${-f.hy * d}px)`, opacity: 0 },
       { opacity: 1, offset: 0.35 },
       { transform: "translate(0,0)", opacity: 1 },
-    ], { duration: 1900, easing: "cubic-bezier(.2,.7,.25,1)" });
+    ], { duration: ms, easing: "cubic-bezier(.2,.7,.25,1)" });
   }
 
   /* ---------- the fish notice you ----------

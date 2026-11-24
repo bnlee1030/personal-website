@@ -35,14 +35,18 @@ Labels sit at `--lx/--ly` on each fish (as a % of the fish's image, the point is
 
 ## Regenerating the fish
 
-`tools/extract_fish.py` cuts the fish out of the photo of the painting (`tools/source-painting.jpg`), evens out the lighting, and paints the paper back in where the fish were:
+`tools/extract_fish.py` cuts the fish out of the photo of the painting (`tools/source-painting.jpg`), evens out the lighting, and paints the paper back in where the fish were. The fish shapes come from hand-drawn red outlines over a screenshot of the home page (`tools/fish-outlines.jpg`).
 
 ```sh
 pip install opencv-python-headless numpy
 python3 tools/extract_fish.py tools/source-painting.jpg assets
 ```
 
-The fish outlines are hand-drawn polygons in that script, refined with GrabCut. To use a different painting, update the crop and polygons, then copy the new numbers from `assets/fish.json` into the fish `style` attributes in `index.html`.
+If a fish changes size, copy the new numbers from `assets/fish.json` into that fish's `style` in `index.html`.
+
+## Swimming
+
+When a fish swims off (or back), `js/swim.js` redraws it with WebGL and bends it along its backbone: a wave runs from head to tail, widest at the tail, and the front fins row. Each fish's backbone is a list of points in `SPINES` in `js/pond.js`. Without WebGL, the fish simply glides.
 
 ## Evening
 
