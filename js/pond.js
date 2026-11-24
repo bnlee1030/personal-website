@@ -128,18 +128,24 @@
   let busy = false;
   pond.addEventListener("pointermove", (e) => {
     if (busy || e.pointerType === "touch") return;
-    const f = fishAt(toPainting(e));
+    const p = toPainting(e);
+    const f = fishAt(p);
     light(f ? f.name : null);
+    if (finePointer) { cursor = p; setTargets(); kick(); }
     pond.style.cursor = f ? "pointer" : "";
   });
-  pond.addEventListener("pointerleave", () => !busy && light(null));
+  pond.addEventListener("pointerleave", () => {
+    if (busy) return;
+    light(null);
+    cursor = null; setTargets(); kick();
+  });
   pond.addEventListener("click", (e) => {
     if (busy || e.target.closest(".legend")) return;
     e.preventDefault();
     const p = toPainting(e);
     const f = fishAt(p);
     if (f) location.hash = "#/" + f.name;
-    else ripple(p.x, p.y);
+    else { ripple(p.x, p.y); startle(p); }
   });
   fishEls.forEach((el) => {
     el.addEventListener("focus", () => light(el.dataset.fish));
@@ -223,6 +229,71 @@
     ], { duration: 1900, easing: "cubic-bezier(.2,.7,.25,1)" });
   }
 
+  /* ---------- the fish notice you ----------
+     A fish near the cursor turns its head a degree or two toward it and
+     edges a few pixels closer. Clicking the water nearby makes it dart away
+     a little, then settle back. Movement is a damped spring, so it eases in
+     and out; nothing is 3D, it's all flat shifts and tiny turns. */
+  const NOTICE_RADIUS = 520;   // painting px
+  const LEAN = 14;             // furthest a fish edges toward you, painting px
+  const TURN = 2.2;            // furthest it turns, degrees
+  const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
+  const motion = Object.values(fish).map((f) => {
+    const cs = f.el.style;
+    return {
+      f, sway: f.el.querySelector(".fish__sway"),
+      head: {
+        x: f.x + f.w * parseFloat(cs.getPropertyValue("--px")) / 100,
+        y: f.y + f.h * parseFloat(cs.getPropertyValue("--py")) / 100,
+      },
+      x: 0, y: 0, r: 0, vx: 0, vy: 0, vr: 0, tx: 0, ty: 0, tr: 0,
+    };
+  });
+  let cursor = null, rafId = 0;
+
+  function setTargets() {
+    for (const m of motion) {
+      m.tx = m.ty = m.tr = 0;
+      if (!cursor) continue;
+      const dx = cursor.x - m.head.x, dy = cursor.y - m.head.y;
+      const d = Math.hypot(dx, dy);
+      if (d > NOTICE_RADIUS || d < 1) continue;
+      const pull = Math.sin((1 - d / NOTICE_RADIUS) * Math.PI / 2); // strongest close by
+      m.tx = dx / d * LEAN * pull;
+      m.ty = dy / d * LEAN * pull;
+      // turn toward the cursor: sign of the angle between heading and cursor
+      const cross = m.f.hx * dy - m.f.hy * dx, dot = m.f.hx * dx + m.f.hy * dy;
+      const ang = Math.atan2(cross, dot); // -pi..pi
+      m.tr = Math.max(-1, Math.min(1, ang / (Math.PI / 2))) * TURN * pull;
+    }
+  }
+  function startle(p) {
+    for (const m of motion) {
+      const dx = m.head.x - p.x, dy = m.head.y - p.y, d = Math.hypot(dx, dy);
+      if (d > 600 || d < 1) continue;
+      const k = (1 - d / 600) * 9;
+      m.vx += dx / d * k; m.vy += dy / d * k;
+      m.vr += (Math.random() - .5) * k * .4;
+    }
+    kick();
+  }
+  function step() {
+    let moving = false;
+    for (const m of motion) {
+      // damped spring toward the target
+      m.vx = (m.vx + (m.tx - m.x) * 0.018) * 0.9;
+      m.vy = (m.vy + (m.ty - m.y) * 0.018) * 0.9;
+      m.vr = (m.vr + (m.tr - m.r) * 0.018) * 0.9;
+      m.x += m.vx; m.y += m.vy; m.r += m.vr;
+      if (Math.abs(m.vx) + Math.abs(m.vy) + Math.abs(m.vr) > 0.003 ||
+          Math.abs(m.tx - m.x) + Math.abs(m.ty - m.y) > 0.05) moving = true;
+      m.sway.style.translate = `${m.x.toFixed(2)}px ${m.y.toFixed(2)}px`;
+      m.sway.style.rotate = `${m.r.toFixed(3)}deg`;
+    }
+    rafId = moving ? requestAnimationFrame(step) : 0;
+  }
+  function kick() { if (!rafId && !reduceMotion) rafId = requestAnimationFrame(step); }
+
   /* ---------- views ---------- */
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   let current = null; // null = pond, else section name
@@ -231,6 +302,7 @@
   async function showSection(name, animate) {
     const f = fish[name];
     busy = true;
+    cursor = null; setTargets(); kick();
     if (animate && current === null && !reduceMotion) {
       body.classList.add("leaving");
       light(name);
